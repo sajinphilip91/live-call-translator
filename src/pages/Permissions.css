@@ -1,0 +1,114 @@
+.permissions-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 32px 24px;
+    background-color: var(--color-bg);
+}
+
+.permissions-header {
+    margin-bottom: 40px;
+}
+
+.permissions-title {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--color-text-primary);
+}
+
+.permissions-desc {
+    font-size: 16px;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+}
+
+.permissions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex: 1;
+}
+
+.permission-item {
+    background-color: var(--color-surface);
+    padding: 20px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.permission-item.active {
+    border-color: var(--color-primary);
+    background-color: rgba(45, 104, 255, 0.03);
+}
+
+.permission-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.permission-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background-color: var(--color-bg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--color-text-primary);
+}
+
+.permission-text h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--color-text-primary);
+}
+
+.permission-text p {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+.permission-status {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--color-border);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    transition: all 0.2s;
+}
+
+.permission-status.granted {
+    background-color: #10B981;
+    /* Green */
+    border-color: #10B981;
+}
+
+.btn-continue {
+    margin-top: auto;
+    background-color: var(--color-primary);
+    color: white;
+    padding: 16px;
+    border-radius: var(--radius-full);
+    font-size: 16px;
+    font-weight: 600;
+    width: 100%;
+    opacity: 0.5;
+    pointer-events: none;
+    transition: all 0.3s;
+}
+
+.btn-continue.enabled {
+    opacity: 1;
+    pointer-events: auto;
+}
