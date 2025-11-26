@@ -1,35 +1,77 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, Pause, Play, X, Minimize2, Maximize2 } from 'lucide-react';
+import { Mic, Pause, Play, X, Minimize2 } from 'lucide-react';
 import './Overlay.css';
-
-const MOCK_TRANSCRIPTS = [
-    { id: 1, original: "नमस्ते, आप कैसे हैं?", translated: "Hello, how are you?", isUser: false },
-    { id: 2, original: "I am good, thank you.", translated: "मैं ठीक हूँ, धन्यवाद।", isUser: true },
-    { id: 3, original: "क्या हम प्रोजेक्ट पर चर्चा कर सकते हैं?", translated: "Can we discuss the project?", isUser: false },
-    { id: 4, original: "Yes, let's start now.", translated: "हाँ, चलिए अभी शुरू करते हैं।", isUser: true },
-    { id: 5, original: "मुझे लगता है कि डिज़ाइन अच्छा है।", translated: "I think the design is good.", isUser: false },
-];
 
 const Overlay = ({ onClose }) => {
     const [isExpanded, setIsExpanded] = useState(true);
     const [isPaused, setIsPaused] = useState(false);
     const [transcripts, setTranscripts] = useState([]);
-    const [mockIndex, setMockIndex] = useState(0);
     const contentRef = useRef(null);
+    const recognitionRef = useRef(null);
 
-    // Simulate live transcription
     useEffect(() => {
-        if (isPaused) return;
+        // Initialize Speech Recognition
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-        const interval = setInterval(() => {
-            if (mockIndex < MOCK_TRANSCRIPTS.length) {
-                setTranscripts(prev => [...prev, MOCK_TRANSCRIPTS[mockIndex]]);
-                setMockIndex(prev => (prev + 1) % MOCK_TRANSCRIPTS.length); // Loop for demo
+        if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US'; // Default to English for demo
+
+            recognition.onresult = (event) => {
+                const current = event.resultIndex;
+                const transcript = event.results[current][0].transcript;
+                const isFinal = event.results[current].isFinal;
+
+                if (isFinal) {
+                    // In a real app, send 'transcript' to translation API here.
+                    // For this demo, we'll just mock a Hindi translation.
+                    const mockTranslation = "अनुवाद: " + transcript;
+
+                    setTranscripts(prev => [
+                        ...prev,
+                        {
+                            id: Date.now(),
+                            original: transcript,
+                            translated: mockTranslation,
+                            isUser: true
+                        }
+                    ]);
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Speech recognition error", event.error);
+            };
+
+            recognitionRef.current = recognition;
+        } else {
+            console.warn("Browser does not support Speech Recognition");
+            setTranscripts([{ id: 0, original: "Error", translated: "Browser not supported", isUser: false }]);
+        }
+
+        return () => {
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
             }
-        }, 2500);
+        };
+    }, []);
 
-        return () => clearInterval(interval);
-    }, [mockIndex, isPaused]);
+    // Handle Start/Stop based on Pause state
+    useEffect(() => {
+        if (!recognitionRef.current) return;
+
+        if (isPaused) {
+            recognitionRef.current.stop();
+        } else {
+            try {
+                recognitionRef.current.start();
+            } catch (e) {
+                // Ignore error if already started
+            }
+        }
+    }, [isPaused]);
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -53,8 +95,8 @@ const Overlay = ({ onClose }) => {
             <div className="overlay-expanded animate-fade-in">
                 <div className="overlay-header">
                     <div className="overlay-status">
-                        <div className="status-dot" />
-                        <span>Translating...</span>
+                        <div className={`status-dot ${isPaused ? 'paused' : ''}`} />
+                        <span>{isPaused ? 'Paused' : 'Listening...'}</span>
                     </div>
                     <div className="overlay-actions">
                         <div className="action-icon" onClick={() => setIsPaused(!isPaused)}>
@@ -71,8 +113,8 @@ const Overlay = ({ onClose }) => {
 
                 <div className="overlay-content" ref={contentRef}>
                     {transcripts.length === 0 && (
-                        <div style={{ textAlign: 'center', color: '#999', padding: '20px' }}>
-                            Listening for speech...
+                        <div style={{ textAlign: 'center', color: '#999', padding: '20px', fontSize: '14px' }}>
+                            {isPaused ? 'Translation paused' : 'Speak now...'}
                         </div>
                     )}
                     {transcripts.map((t, idx) => (
