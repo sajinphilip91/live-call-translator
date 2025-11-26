@@ -2,12 +2,44 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Mic, Pause, Play, X, Minimize2 } from 'lucide-react';
 import './Overlay.css';
 
-const Overlay = ({ onClose }) => {
+const Overlay = ({ onClose, inputLang = 'en-US' }) => {
     const [isExpanded, setIsExpanded] = useState(true);
     const [isPaused, setIsPaused] = useState(false);
     const [transcripts, setTranscripts] = useState([]);
     const contentRef = useRef(null);
     const recognitionRef = useRef(null);
+
+    // Simple Mock Dictionary for Demo
+    const translateText = (text, lang) => {
+        if (lang === 'en-US') return "अनुवाद: " + text; // English -> Hindi (Mock)
+
+        // Hindi -> English Dictionary
+        const dictionary = {
+            "तुम्हारा नाम क्या है": "What is your name?",
+            "तुमारा नाम क्या है": "What is your name?", // Common misspellings/variations
+            "आपका नाम क्या है": "What is your name?",
+            "नमस्ते": "Hello",
+            "आप कैसे हैं": "How are you?",
+            "मैं ठीक हूँ": "I am fine",
+            "धन्यवाद": "Thank you",
+            "हाँ": "Yes",
+            "नहीं": "No",
+            "चलो": "Let's go",
+            "क्या हो रहा है": "What is happening?",
+            "सुप्रभात": "Good morning",
+            "शुभ रात्रि": "Good night"
+        };
+
+        // Check for exact match or partial match
+        for (const [hindi, english] of Object.entries(dictionary)) {
+            if (text.includes(hindi)) {
+                return english;
+            }
+        }
+
+        // Fallback for unknown words
+        return `[Translating: ${text}...]`;
+    };
 
     useEffect(() => {
         // Initialize Speech Recognition
@@ -17,7 +49,7 @@ const Overlay = ({ onClose }) => {
             const recognition = new SpeechRecognition();
             recognition.continuous = true;
             recognition.interimResults = true;
-            recognition.lang = 'en-US'; // Default to English for demo
+            recognition.lang = inputLang;
 
             recognition.onresult = (event) => {
                 const current = event.resultIndex;
@@ -25,16 +57,14 @@ const Overlay = ({ onClose }) => {
                 const isFinal = event.results[current].isFinal;
 
                 if (isFinal) {
-                    // In a real app, send 'transcript' to translation API here.
-                    // For this demo, we'll just mock a Hindi translation.
-                    const mockTranslation = "अनुवाद: " + transcript;
+                    const translation = translateText(transcript, inputLang);
 
                     setTranscripts(prev => [
                         ...prev,
                         {
                             id: Date.now(),
                             original: transcript,
-                            translated: mockTranslation,
+                            translated: translation,
                             isUser: true
                         }
                     ]);
@@ -56,7 +86,7 @@ const Overlay = ({ onClose }) => {
                 recognitionRef.current.stop();
             }
         };
-    }, []);
+    }, [inputLang]); // Re-run if language changes
 
     // Handle Start/Stop based on Pause state
     useEffect(() => {
@@ -96,7 +126,7 @@ const Overlay = ({ onClose }) => {
                 <div className="overlay-header">
                     <div className="overlay-status">
                         <div className={`status-dot ${isPaused ? 'paused' : ''}`} />
-                        <span>{isPaused ? 'Paused' : 'Listening...'}</span>
+                        <span>{isPaused ? 'Paused' : `Listening (${inputLang === 'hi-IN' ? 'Hindi' : 'English'})...`}</span>
                     </div>
                     <div className="overlay-actions">
                         <div className="action-icon" onClick={() => setIsPaused(!isPaused)}>
@@ -114,7 +144,7 @@ const Overlay = ({ onClose }) => {
                 <div className="overlay-content" ref={contentRef}>
                     {transcripts.length === 0 && (
                         <div style={{ textAlign: 'center', color: '#999', padding: '20px', fontSize: '14px' }}>
-                            {isPaused ? 'Translation paused' : 'Speak now...'}
+                            {isPaused ? 'Translation paused' : `Speak ${inputLang === 'hi-IN' ? 'Hindi' : 'English'} now...`}
                         </div>
                     )}
                     {transcripts.map((t, idx) => (

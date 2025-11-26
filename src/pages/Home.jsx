@@ -24,7 +24,10 @@ const Home = () => {
             {/* Simulation Background & Overlay */}
             {isTranslating && (
                 <div className="simulation-overlay">
-                    <Overlay onClose={() => setIsTranslating(false)} />
+                    <Overlay
+                        onClose={() => setIsTranslating(false)}
+                        inputLang={langDirection.from === 'Hindi' ? 'hi-IN' : 'en-US'}
+                    />
 
                     <div className="simulation-controls">
                         <button className="sim-btn end" onClick={() => setIsTranslating(false)}>
