@@ -9,36 +9,30 @@ const Overlay = ({ onClose, inputLang = 'en-US' }) => {
     const contentRef = useRef(null);
     const recognitionRef = useRef(null);
 
-    // Simple Mock Dictionary for Demo
-    const translateText = (text, lang) => {
-        if (lang === 'en-US') return "अनुवाद: " + text; // English -> Hindi (Mock)
-
-        // Hindi -> English Dictionary
-        const dictionary = {
-            "तुम्हारा नाम क्या है": "What is your name?",
-            "तुमारा नाम क्या है": "What is your name?", // Common misspellings/variations
-            "आपका नाम क्या है": "What is your name?",
-            "नमस्ते": "Hello",
-            "आप कैसे हैं": "How are you?",
-            "मैं ठीक हूँ": "I am fine",
-            "धन्यवाद": "Thank you",
-            "हाँ": "Yes",
-            "नहीं": "No",
-            "चलो": "Let's go",
-            "क्या हो रहा है": "What is happening?",
-            "सुप्रभात": "Good morning",
-            "शुभ रात्रि": "Good night"
-        };
-
-        // Check for exact match or partial match
-        for (const [hindi, english] of Object.entries(dictionary)) {
-            if (text.includes(hindi)) {
-                return english;
+    // Translation function that handles romanized Hindi
+    const translateText = async (text, lang) => {
+        try {
+            if (lang === 'en-US') {
+                // English -> Hindi using Google Translate API (via cors-anywhere proxy)
+                const response = await fetch(
+                    `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=hi&dt=t&q=${encodeURIComponent(text)}`
+                );
+                const data = await response.json();
+                return data[0][0][0] || text;
+            } else {
+                // For Hindi input (which comes as romanized text from speech recognition)
+                // We need to translate romanized Hindi -> English
+                // Using Google Translate which handles romanized input well
+                const response = await fetch(
+                    `https://translate.googleapis.com/translate_a/single?client=gtx&sl=hi&tl=en&dt=t&q=${encodeURIComponent(text)}`
+                );
+                const data = await response.json();
+                return data[0][0][0] || text;
             }
+        } catch (error) {
+            console.error('Translation error:', error);
+            return `[Translation error]`;
         }
-
-        // Fallback for unknown words
-        return `[Translating: ${text}...]`;
     };
 
     useEffect(() => {
@@ -51,23 +45,33 @@ const Overlay = ({ onClose, inputLang = 'en-US' }) => {
             recognition.interimResults = true;
             recognition.lang = inputLang;
 
-            recognition.onresult = (event) => {
+            recognition.onresult = async (event) => {
                 const current = event.resultIndex;
                 const transcript = event.results[current][0].transcript;
                 const isFinal = event.results[current].isFinal;
 
                 if (isFinal) {
-                    const translation = translateText(transcript, inputLang);
-
+                    // Show "Translating..." placeholder first
+                    const tempId = Date.now();
                     setTranscripts(prev => [
                         ...prev,
                         {
-                            id: Date.now(),
+                            id: tempId,
                             original: transcript,
-                            translated: translation,
+                            translated: 'Translating...',
                             isUser: true
                         }
                     ]);
+
+                    // Get actual translation
+                    const translation = await translateText(transcript, inputLang);
+
+                    // Update with real translation
+                    setTranscripts(prev =>
+                        prev.map(t =>
+                            t.id === tempId ? { ...t, translated: translation } : t
+                        )
+                    );
                 }
             };
 
